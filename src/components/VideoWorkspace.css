@@ -1,0 +1,205 @@
+.video-workspace {
+	position: relative;
+	width: 100%;
+	background: #000;
+	color: white;
+}
+
+.fullscreen-video {
+	position: relative;
+	width: 100%;
+	max-height: 80vh;
+	object-fit: contain; /* Ensure video fits within screen */
+	z-index: 0;
+	background: #000;
+}
+
+.workspace-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 10;
+	pointer-events: none; /* Let clicks pass through to video where empty */
+	display: flex;
+	justify-content: space-between;
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+/* Left Panel: Position Grid */
+.positions-panel {
+	pointer-events: auto;
+	width: 360px;
+	background: rgba(0, 0, 0, 0.4);
+	backdrop-filter: blur(4px);
+	border-radius: 12px;
+	padding: 15px;
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	grid-auto-rows: min-content;
+	gap: 10px;
+	align-content: start;
+	height: calc(100% - 100px); /* Almost full height with bottom margin */
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.position-marker {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.2);
+	border: 2px solid rgba(255, 255, 255, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font-size: 0.8rem;
+	font-weight: bold;
+	transition: all 0.2s;
+}
+
+.position-marker:hover {
+	background: rgba(255, 255, 255, 0.4);
+	transform: scale(1.1);
+}
+
+.position-marker.active {
+	background: var(--guitar-accent, #81a1c1);
+	color: #1a1a1a;
+	border-color: #fff;
+	box-shadow: 0 0 10px var(--guitar-glow, rgba(240, 198, 116, 0.6));
+}
+
+/* Right Panel: Controls & Guitar Tab */
+.controls-panel {
+	pointer-events: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 20px;
+}
+
+.top-controls-row {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.control-btn {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: none;
+	background: rgba(255, 255, 255, 0.1);
+	color: #fff;
+	font-size: 0.8rem;
+	font-weight: bold;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s;
+}
+
+.control-btn:hover {
+	background: rgba(255, 255, 255, 0.3);
+	transform: scale(1.1);
+}
+
+.control-btn.active {
+	background: var(--guitar-accent, #81a1c1);
+	color: #1a1a1a;
+}
+
+.remove-btn {
+	background: rgba(255, 80, 80, 0.3);
+	color: #ffcccc;
+}
+
+.remove-btn:hover {
+	background: rgba(255, 80, 80, 0.6);
+}
+
+.add-position-btn {
+	background: var(--guitar-accent, #81a1c1);
+	color: #1a1a1a;
+	border: none;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	font-weight: bold;
+	cursor: pointer;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	transition: all 0.2s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.2rem;
+}
+
+.add-position-btn:hover {
+	background: #fff;
+	transform: translateY(-2px);
+}
+
+.guitar-wrapper {
+	position: absolute;
+	bottom: 100px;
+	right: 20px;
+	background: rgba(26, 26, 26, 0.9);
+	/* padding: 10px; */
+	border-radius: 12px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(10px);
+	z-index: 15;
+}
+
+.settings-controls {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 10px;
+	background: rgba(0, 0, 0, 0.4);
+	padding: 10px;
+	border-radius: 8px;
+	backdrop-filter: blur(4px);
+}
+
+.setting-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.setting-row label {
+	color: #ccc;
+	font-size: 0.75rem;
+	min-width: 50px;
+	cursor: help;
+}
+
+.setting-row input[type='number'] {
+	width: 50px;
+	padding: 4px 6px;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 4px;
+	color: #fff;
+	font-size: 0.8rem;
+	text-align: center;
+}
+
+.setting-row input[type='number']:focus {
+	outline: none;
+	border-color: var(--guitar-accent, #81a1c1);
+	background: rgba(255, 255, 255, 0.15);
+}
+
+.setting-row input[type='number']::-webkit-inner-spin-button,
+.setting-row input[type='number']::-webkit-outer-spin-button {
+	opacity: 1;
+}

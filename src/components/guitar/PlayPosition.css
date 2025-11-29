@@ -1,0 +1,222 @@
+:root {
+  --guitar-bg: #1a1a1a;
+  --guitar-string: #555;
+  --guitar-string-active: #f0c674;
+  --guitar-fret: #333;
+  --guitar-accent: #81a1c1;
+  --guitar-glow: rgba(240, 198, 116, 0.6);
+  --cell-size: 40px;
+  --string-spacing: 30px;
+}
+
+.play-position-container {
+  display: flex;
+  align-items: flex-start;
+  background-color: var(--guitar-bg);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  font-family: sans-serif;
+  user-select: none;
+  gap: 2px; /* Small gap between components */
+}
+
+/* Common Grid Styles */
+.guitar-grid {
+  display: grid;
+  position: relative;
+}
+
+.string-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--guitar-string);
+  transform: translateY(-50%);
+  z-index: 0;
+  pointer-events: none;
+  transition: background-color 0.3s;
+}
+
+.cell {
+  width: var(--cell-size);
+  height: var(--string-spacing);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1;
+  position: relative;
+}
+
+.note-marker {
+  width: var(--clamp-marker-size, 14px);
+  height: var(--clamp-marker-size, 14px);
+  border-radius: 50%;
+  background-color: transparent;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.cell:hover .note-marker {
+  border-color: rgba(255,255,255,0.2);
+}
+
+.cell.active .note-marker {
+  background-color: var(--guitar-string-active);
+  box-shadow: 0 0 8px var(--guitar-glow);
+  transform: scale(1.2);
+}
+
+.cell.active-red .note-marker {
+  background-color: #d47373;
+  box-shadow: 0 0 8px rgba(212, 115, 115, 0.6);
+  transform: scale(1.2);
+}
+
+/* Pluck Specifics */
+.pluck-component {
+  border-right: 2px solid #333;
+  padding-right: 10px;
+}
+
+/* Override sizes for pluck component to make it narrower */
+.pluck-component .cell {
+  width: var(--pluck-cell-width, 20px);
+}
+
+.pluck-component .note-marker {
+  width: var(--pluck-marker-size, 10px);
+  height: var(--pluck-marker-size, 10px);
+}
+
+.pluck-component .guitar-grid {
+  gap: 0;
+}
+
+.pluck-header {
+  display: flex;
+  height: 30px;
+  margin-bottom: 10px;
+}
+.pluck-col-header {
+  width: var(--pluck-cell-width, 20px); /* Match cell width */
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+}
+
+/* Clamp Specifics */
+.clamp-component {
+  padding-left: 10px;
+  position: relative;
+}
+
+.clamp-header {
+  display: flex;
+  height: 30px;
+  margin-bottom: 10px;
+}
+
+.clamp-header .pluck-col-header {
+  width: var(--cell-size);
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+.clamp-header .pluck-col-header.fret-barre-active {
+  color: var(--guitar-accent, #81a1c1);
+  font-weight: bold;
+}
+
+.string-number-header {
+  width: 5px;
+  margin-left: 10px;
+}
+
+.guitar-grid-wrapper {
+  display: flex;
+  align-items: flex-start;
+}
+
+.string-numbers {
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+}
+
+.string-number {
+  height: var(--string-spacing);
+  width: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+.fret-line {
+  position: absolute;
+  top: 0; /* Start from top to connect all strings */
+  bottom: 0;
+  width: 4px;
+  background-color: var(--guitar-fret);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+/* Fret Nut (start of neck) */
+.fret-line.nut {
+  width: 6px;
+  background-color: #555;
+}
+
+/* Legacy barre toggle styles - now used for numbered headers */
+.barre-toggle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #333;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.barre-toggle:hover {
+  background: #444;
+  color: #fff;
+}
+
+.barre-toggle.active {
+  background: var(--guitar-accent);
+  color: #1a1a1a;
+  font-weight: bold;
+}
+
+.barre-indicator {
+  position: absolute;
+  top: 0; /* Start from top */
+  bottom: 0;
+  width: 12px;
+  background-color: rgba(129, 161, 193, 0.3);
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Connect strings visually */
+.play-position-container:hover .string-line {
+  background-color: #666;
+}
