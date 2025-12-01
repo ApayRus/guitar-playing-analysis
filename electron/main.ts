@@ -9,8 +9,11 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 // Disable sandbox for AppImage compatibility - must be called before app.whenReady()
-app.commandLine.appendSwitch('--no-sandbox')
-app.commandLine.appendSwitch('--disable-setuid-sandbox')
+app.commandLine.appendSwitch('no-sandbox')
+app.commandLine.appendSwitch('disable-setuid-sandbox')
+
+// Set app name for proper WM_CLASS on Linux
+app.setName('GuitarNotebook')
 
 let mainWindow: BrowserWindow | null = null
 
@@ -20,6 +23,7 @@ function createWindow() {
 	mainWindow = new BrowserWindow({
 		width: 1400,
 		height: 900,
+		icon: join(__dirname, '../dist/favicon/android-chrome-512x512.png'),
 		webPreferences: {
 			preload: join(__dirname, 'preload.js'),
 			nodeIntegration: false,
@@ -28,6 +32,11 @@ function createWindow() {
 		},
 		titleBarStyle: 'default'
 	})
+
+	// Set WM_CLASS for Linux desktop integration
+	if (process.platform === 'linux') {
+		mainWindow.setTitle('GuitarNotebook')
+	}
 
 	// Load the app
 	if (isDev) {
