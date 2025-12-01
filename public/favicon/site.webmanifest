@@ -1,6 +1,6 @@
 {
-  "name": "Desert Rose Guitar App",
-  "short_name": "Guitar App",
+  "name": "GuitarNotebook",
+  "short_name": "GuitarNotebook",
   "description": "Guitar tab editor with video synchronization",
   "icons": [
     {

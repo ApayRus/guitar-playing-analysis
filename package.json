@@ -3,9 +3,13 @@
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
+	"main": "dist-electron/main.js",
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc -b && vite build",
+		"build:electron": "tsc -p tsconfig.electron.json && vite build",
+		"electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+		"electron:build": "npm run build:electron && ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES=true electron-builder",
 		"lint": "eslint .",
 		"preview": "vite preview"
 	},
@@ -19,12 +23,45 @@
 		"@types/react": "^19.2.5",
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^5.1.1",
+		"concurrently": "^9.2.1",
+		"electron": "^39.2.4",
+		"electron-builder": "^26.0.12",
 		"eslint": "^9.39.1",
 		"eslint-plugin-react-hooks": "^7.0.1",
 		"eslint-plugin-react-refresh": "^0.4.24",
 		"globals": "^16.5.0",
 		"typescript": "~5.9.3",
 		"typescript-eslint": "^8.46.4",
-		"vite": "^7.2.4"
+		"vite": "^7.2.4",
+		"wait-on": "^9.0.3"
+	},
+	"build": {
+		"appId": "com.guitarnotebook.app",
+		"productName": "GuitarNotebook",
+		"directories": {
+			"output": "release"
+		},
+		"files": [
+			"dist/**/*",
+			"dist-electron/**/*",
+			"node_modules/**/*"
+		],
+		"win": {
+			"target": "nsis",
+			"icon": "public/favicon/favicon.ico"
+		},
+		"linux": {
+			"target": "AppImage",
+			"category": "AudioVideo",
+			"executableName": "GuitarNotebook",
+			"icon": "public/favicon/android-chrome-512x512.png",
+			"extraResources": [],
+			"artifactName": "${productName}-${version}.${ext}"
+		},
+		"mac": {
+			"target": "dmg",
+			"category": "public.app-category.music",
+			"icon": "public/favicon/android-chrome-512x512.png"
+		}
 	}
 }

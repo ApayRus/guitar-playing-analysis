@@ -47,6 +47,17 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 }) => {
 	const videoRef = useRef<HTMLVideoElement>(null)
 
+	// State for video file path
+	const [videoSrc, setVideoSrc] = useState<string>(() => {
+		// Try to load saved video path from localStorage
+		try {
+			const saved = localStorage.getItem('video-path')
+			return saved || '/video.mp4' // Fallback to default
+		} catch (e) {
+			return '/video.mp4'
+		}
+	})
+
 	// State for positions list
 	const [positions, setPositions] = useState<Position[]>(() => {
 		try {
@@ -88,15 +99,182 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 		localStorage.setItem('guitar-settings', JSON.stringify(guitarSettings))
 	}, [guitarSettings])
 
-	// Handle position selection
-	const handleSelectPosition = useCallback((pos: Position | number) => {
-		const positionId = typeof pos === 'number' ? pos : pos.id
-		const position = typeof pos === 'number' ? positions.find(p => p.id === positionId) : pos
-		if (position && videoRef.current) {
-			videoRef.current.currentTime = position.timestamp
+	// Persist video path
+	useEffect(() => {
+		if (videoSrc && videoSrc !== '/video.mp4') {
+			localStorage.setItem('video-path', videoSrc)
 		}
-		setActiveId(positionId)
-	}, [positions])
+	}, [videoSrc])
+
+	// Handle video file selection (Electron only)
+	const handleSelectVideoFile = async () => {
+		if (window.electronAPI) {
+			try {
+				const filePath = await window.electronAPI.selectVideoFile()
+				if (filePath) {
+					// In Electron, use file:// protocol for local files
+					setVideoSrc(`file://${filePath}`)
+				}
+			} catch (error) {
+				console.error('Failed to select video file:', error)
+			}
+		}
+	}
+
+	// Handle load data file
+	const handleLoadFile = async () => {
+		if (window.electronAPI) {
+			// Electron: use IPC
+			try {
+				const filePath = await window.electronAPI.selectDataFile()
+				if (filePath) {
+					const fileContent = await window.electronAPI.readDataFile(filePath)
+					loadDataFromJSON(fileContent)
+				}
+			} catch (error) {
+				console.error('Failed to load file:', error)
+				alert('Failed to load file. Please check the console for details.')
+			}
+		} else {
+			// Web: use file input
+			const input = document.createElement('input')
+			input.type = 'file'
+			input.accept = '.json'
+			input.onchange = async e => {
+				const file = (e.target as HTMLInputElement).files?.[0]
+				if (file) {
+					const text = await file.text()
+					loadDataFromJSON(text)
+				}
+			}
+			input.click()
+		}
+	}
+
+	// Load data from JSON string
+	const loadDataFromJSON = (jsonString: string) => {
+		try {
+			const data = JSON.parse(jsonString)
+
+			// Load video-positions
+			if (data['video-positions']) {
+				localStorage.setItem(
+					'video-positions',
+					JSON.stringify(data['video-positions'])
+				)
+				setPositions(data['video-positions'])
+			}
+
+			// Load guitar-settings
+			if (data['guitar-settings']) {
+				localStorage.setItem(
+					'guitar-settings',
+					JSON.stringify(data['guitar-settings'])
+				)
+				setGuitarSettings(data['guitar-settings'])
+			}
+
+			// Load playPositions
+			if (data.playPositions) {
+				localStorage.setItem(
+					'playPositions',
+					JSON.stringify(data.playPositions)
+				)
+			}
+
+			// Load video-path
+			if (data['video-path']) {
+				localStorage.setItem('video-path', data['video-path'])
+				setVideoSrc(data['video-path'])
+			}
+
+			// Reset active position
+			setActiveId(null)
+
+			alert('Data loaded successfully!')
+		} catch (error) {
+			console.error('Failed to parse JSON:', error)
+			alert('Failed to load file. Invalid JSON format.')
+		}
+	}
+
+	// Export data to JSON file
+	const handleExportFile = async () => {
+		try {
+			// Collect all data from localStorage
+			const exportData: Record<string, any> = {}
+
+			// Export video-positions
+			const videoPositions = localStorage.getItem('video-positions')
+			if (videoPositions) {
+				exportData['video-positions'] = JSON.parse(videoPositions)
+			}
+
+			// Export guitar-settings
+			const guitarSettings = localStorage.getItem('guitar-settings')
+			if (guitarSettings) {
+				exportData['guitar-settings'] = JSON.parse(guitarSettings)
+			}
+
+			// Export playPositions
+			const playPositions = localStorage.getItem('playPositions')
+			if (playPositions) {
+				exportData.playPositions = JSON.parse(playPositions)
+			}
+
+			// Export video-path
+			const videoPath = localStorage.getItem('video-path')
+			if (videoPath) {
+				exportData['video-path'] = videoPath
+			}
+
+			const jsonString = JSON.stringify(exportData, null, 2)
+
+			if (window.electronAPI) {
+				// Electron: use IPC
+				try {
+					const filePath = await window.electronAPI.selectSaveFile()
+					if (filePath) {
+						await window.electronAPI.writeDataFile(filePath, jsonString)
+						alert('Data exported successfully!')
+					}
+				} catch (error) {
+					console.error('Failed to export file:', error)
+					alert('Failed to export file. Please check the console for details.')
+				}
+			} else {
+				// Web: use download
+				const blob = new Blob([jsonString], { type: 'application/json' })
+				const url = URL.createObjectURL(blob)
+				const a = document.createElement('a')
+				a.href = url
+				a.download = `guitar-app-data-${
+					new Date().toISOString().split('T')[0]
+				}.json`
+				document.body.appendChild(a)
+				a.click()
+				document.body.removeChild(a)
+				URL.revokeObjectURL(url)
+			}
+		} catch (error) {
+			console.error('Failed to export data:', error)
+			alert('Failed to export data. Please check the console for details.')
+		}
+	}
+
+	// Handle position selection
+	const handleSelectPosition = useCallback(
+		(pos: Position | number) => {
+			const positionId = typeof pos === 'number' ? pos : pos.id
+			const position =
+				typeof pos === 'number' ? positions.find(p => p.id === positionId) : pos
+			if (position && videoRef.current) {
+				videoRef.current.currentTime = position.timestamp
+			}
+			setActiveId(positionId)
+		},
+		[positions]
+	)
 
 	// Notify parent component when data is ready
 	useEffect(() => {
@@ -327,7 +505,7 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 			<video
 				ref={videoRef}
 				className='fullscreen-video'
-				src='/video.mp4'
+				src={videoSrc}
 				controls
 				onSeeked={handleSeeked}
 				onTimeUpdate={handleTimeUpdate}
@@ -352,6 +530,35 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 				{/* Right Panel: Controls & Guitar Tab */}
 				<div className='controls-panel'>
 					<div className='top-controls-row'>
+						{/* Export Data File Button */}
+						<button
+							className='control-btn'
+							onClick={handleExportFile}
+							title='Export Data File'
+						>
+							↑
+						</button>
+
+						{/* Load Data File Button */}
+						<button
+							className='control-btn'
+							onClick={handleLoadFile}
+							title='Import Data File'
+						>
+							↓
+						</button>
+
+						{/* Select Video File Button (Electron only) */}
+						{window.electronAPI && (
+							<button
+								className='control-btn'
+								onClick={handleSelectVideoFile}
+								title='Select Video File'
+							>
+								📁
+							</button>
+						)}
+
 						{/* Remove Button */}
 						<button
 							className='control-btn remove-btn'
@@ -540,52 +747,67 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 							{getAllPlayPositions()
 								.map(pp => {
 									const playPositionData = getPlayPosition(pp.id)
-									return playPositionData ? { ...pp, data: playPositionData } : null
+									return playPositionData
+										? { ...pp, data: playPositionData }
+										: null
 								})
-								.filter((pp): pp is { id: string; fretCount: number; pluckCols: number; data: NonNullable<ReturnType<typeof getPlayPosition>> } => {
-									if (!pp || !pp.data) return false
-									// Check if position is empty
-									const { pluck, clamp, barres } = pp.data
-									// Check pluck: all false
-									const hasPluck = pluck.some(row => row.some(cell => cell === true))
-									// Check clamp: all 0 (inactive)
-									const hasClamp = clamp.some(row => row.some(cell => cell !== 0))
-									// Check barres: all false
-									const hasBarres = barres.some(barre => barre === true)
-									// Show only if at least one value is set
-									return hasPluck || hasClamp || hasBarres
-								})
+								.filter(
+									(
+										pp
+									): pp is {
+										id: string
+										fretCount: number
+										pluckCols: number
+										data: NonNullable<ReturnType<typeof getPlayPosition>>
+									} => {
+										if (!pp || !pp.data) return false
+										// Check if position is empty
+										const { pluck, clamp, barres } = pp.data
+										// Check pluck: all false
+										const hasPluck = pluck.some(row =>
+											row.some(cell => cell === true)
+										)
+										// Check clamp: all 0 (inactive)
+										const hasClamp = clamp.some(row =>
+											row.some(cell => cell !== 0)
+										)
+										// Check barres: all false
+										const hasBarres = barres.some(barre => barre === true)
+										// Show only if at least one value is set
+										return hasPluck || hasClamp || hasBarres
+									}
+								)
 								.map(pp => {
 									const currentPos = positions.find(p => p.id === activeId)
 									const isSelected = currentPos?.playPositionId === pp.id
 									const playPositionData = pp.data
 
 									return (
-									<div
-										key={pp.id}
-										onClick={() => handleSelectPlayPosition(pp.id)}
-										style={{
-											display: 'inline-block',
-											padding: '5px',
-											cursor: 'pointer',
-											borderRadius: '8px',
-											backgroundColor: isSelected
-												? 'rgba(15, 116, 218, 0.5)'
-												: 'transparent',
-											transition: 'background-color 0.2s'
-										}}
-									>
-										<PlayPosition
-											pluck={playPositionData.pluck}
-											clamp={playPositionData.clamp}
-											barres={playPositionData.barres}
-											fretCount={pp.fretCount}
-											pluckCols={pp.pluckCols}
-											settings={guitarSettings}
-										/>
-									</div>
-								)
-							})}
+										<div
+											key={pp.id}
+											onClick={() => handleSelectPlayPosition(pp.id)}
+											style={{
+												display: 'inline-block',
+												padding: '5px',
+												cursor: 'pointer',
+												borderRadius: '8px',
+												backgroundColor: isSelected
+													? 'rgba(15, 116, 218, 0.5)'
+													: 'transparent',
+												transition: 'background-color 0.2s'
+											}}
+										>
+											<PlayPosition
+												pluck={playPositionData.pluck}
+												clamp={playPositionData.clamp}
+												barres={playPositionData.barres}
+												fretCount={pp.fretCount}
+												pluckCols={pp.pluckCols}
+												settings={guitarSettings}
+											/>
+										</div>
+									)
+								})}
 						</div>
 					</div>
 				</div>
