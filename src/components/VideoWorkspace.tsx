@@ -77,6 +77,7 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 
 	// State for modal
 	const [showPlayPositionsModal, setShowPlayPositionsModal] = useState(false)
+	const [, forceUpdatePlayPositions] = useState(0)
 
 	// State for guitar settings
 	const [guitarSettings, setGuitarSettings] = useState<GuitarSettings>(() => {
@@ -744,43 +745,78 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 								alignContent: 'flex-start'
 							}}
 						>
-							{getAllPlayPositions()
-								.map(pp => {
-									const playPositionData = getPlayPosition(pp.id)
-									return playPositionData
-										? { ...pp, data: playPositionData }
-										: null
-								})
-								.filter(
-									(
-										pp
-									): pp is {
-										id: string
-										fretCount: number
-										pluckCols: number
-										data: NonNullable<ReturnType<typeof getPlayPosition>>
-									} => {
-										if (!pp || !pp.data) return false
-										// Check if position is empty
-										const { pluck, clamp, barres } = pp.data
-										// Check pluck: all false
-										const hasPluck = pluck.some(row =>
-											row.some(cell => cell === true)
-										)
-										// Check clamp: all 0 (inactive)
-										const hasClamp = clamp.some(row =>
-											row.some(cell => cell !== 0)
-										)
-										// Check barres: all false
-										const hasBarres = barres.some(barre => barre === true)
-										// Show only if at least one value is set
-										return hasPluck || hasClamp || hasBarres
-									}
+							{(() => {
+								const allPlayPositions = getAllPlayPositions()
+									.map(pp => {
+										const playPositionData = getPlayPosition(pp.id)
+										return playPositionData
+											? { ...pp, data: playPositionData }
+											: null
+									})
+									.filter(
+										(
+											pp
+										): pp is {
+											id: string
+											fretCount: number
+											pluckCols: number
+											data: NonNullable<ReturnType<typeof getPlayPosition>>
+										} => !!pp && !!pp.data
+									)
+
+								const usedPlayPositionIds = new Set(
+									positions.map(p => p.playPositionId)
 								)
-								.map(pp => {
-									const currentPos = positions.find(p => p.id === activeId)
+
+								const usedPlayPositions = allPlayPositions.filter(pp =>
+									usedPlayPositionIds.has(pp.id)
+								)
+								const unusedPlayPositions = allPlayPositions.filter(
+									pp => !usedPlayPositionIds.has(pp.id)
+								)
+
+								const currentPos = positions.find(p => p.id === activeId)
+
+								const renderPlayPositionCard = (
+									pp: (typeof allPlayPositions)[number],
+									options?: { allowDelete?: boolean }
+								) => {
 									const isSelected = currentPos?.playPositionId === pp.id
 									const playPositionData = pp.data
+
+									const handleDelete = (e: React.MouseEvent) => {
+										e.stopPropagation()
+
+										try {
+											const stored = localStorage.getItem('playPositions')
+											if (!stored) return
+											const parsed = JSON.parse(stored)
+
+											let normalized: Array<{ id: string; [key: string]: any }>
+											if (Array.isArray(parsed)) {
+												normalized = parsed
+											} else {
+												normalized = Object.entries(parsed).map(
+													([id, data]: [string, any]) => ({
+														id,
+														...data
+													})
+												)
+											}
+
+											const filtered = normalized.filter(p => p.id !== pp.id)
+											localStorage.setItem(
+												'playPositions',
+												JSON.stringify(filtered)
+											)
+											forceUpdatePlayPositions(v => v + 1)
+										} catch (err) {
+											console.error(
+												'Failed to delete playPosition from storage',
+												err
+											)
+										}
+									}
 
 									return (
 										<div
@@ -794,9 +830,36 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 												backgroundColor: isSelected
 													? 'rgba(15, 116, 218, 0.5)'
 													: 'transparent',
-												transition: 'background-color 0.2s'
+												transition: 'background-color 0.2s',
+												position: 'relative'
 											}}
 										>
+											{options?.allowDelete && (
+												<button
+													onClick={handleDelete}
+													title='Delete play position'
+													style={{
+														position: 'absolute',
+														top: 0,
+														right: 0,
+														width: '20px',
+														height: '20px',
+														borderRadius: '50%',
+														border: 'none',
+														backgroundColor: 'rgba(0, 0, 0, 0.7)',
+														color: '#fff',
+														fontSize: '12px',
+														cursor: 'pointer',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														zIndex: 10,
+														transform: 'translate(25%, -25%)'
+													}}
+												>
+													✕
+												</button>
+											)}
 											<PlayPosition
 												pluck={playPositionData.pluck}
 												clamp={playPositionData.clamp}
@@ -807,7 +870,51 @@ export const VideoWorkspace: React.FC<VideoWorkspaceProps> = ({
 											/>
 										</div>
 									)
-								})}
+								}
+
+								return (
+									<>
+										{usedPlayPositions.length > 0 &&
+											usedPlayPositions.map(pp =>
+												renderPlayPositionCard(pp, { allowDelete: false })
+											)}
+										{unusedPlayPositions.length > 0 && (
+											<div
+												style={{
+													width: '100%',
+													marginTop: '20px',
+													paddingTop: '10px',
+													borderTop: '1px solid rgba(255, 255, 255, 0.2)'
+												}}
+											>
+												<div
+													style={{
+														marginBottom: '10px',
+														color: '#ccc',
+														fontSize: '14px'
+													}}
+												>
+													Unused play positions
+												</div>
+												<div
+													style={{
+														display: 'flex',
+														flexWrap: 'wrap',
+														gap: '10px',
+														alignContent: 'flex-start'
+													}}
+												>
+													{unusedPlayPositions.map(pp =>
+														renderPlayPositionCard(pp, {
+															allowDelete: true
+														})
+													)}
+												</div>
+											</div>
+										)}
+									</>
+								)
+							})()}
 						</div>
 					</div>
 				</div>
